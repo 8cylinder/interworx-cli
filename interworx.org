@@ -1,0 +1,30 @@
+
+#+title: Nexcess
+
+nexcess updateip SERVER
+nexcess list --all
+nexcess inspect [SERVER]
+
+1. check url
+2. try to login
+3. try to go to firewall section
+4. remove any with label
+5. add new
+
+* ini
+
+[maccom]
+username:
+password:
+url:
+label:
+
+
+
+* yaml
+servers:
+  name: maccom
+    username:
+    password:
+    url:
+    label:
