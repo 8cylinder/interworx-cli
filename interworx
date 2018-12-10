@@ -13,6 +13,7 @@ import logging.handlers
 from pprint import pprint as pp
 import ConfigParser
 import urlparse
+from url_normalize import url_normalize
 
 
 APP_NAME = 'interworx-cli'
@@ -51,6 +52,7 @@ class Interworx:
             click.secho('touch {}'.format(self.config_file), bold=True)
             sys.exit()
 
+        # setup logging
         f = logging.Formatter(
             fmt='%(asctime)s: %(levelname)s %(filename)s:%(lineno)d: %(message)s',
             datefmt="%Y-%m-%d %H:%M:%S")
@@ -130,37 +132,60 @@ class Interworx:
             'password': server.password,
             'domain': server.domain,
         }
+        firewall_payload = {
+            'i': {
+                'a': 'livePayloadCommit',
+                'c': 'index',
+                'iw_payload_output': 'html',
+                'iw_refresh_action': 'listIps',
+                'iw_refresh_ctrl': 'Ctrl_Siteworx_Firewall',
+                'iw_sess_hint': 'siteworx',
+                'pgn8state': {
+                    'd': 'asc',
+                    'l': 0,
+                    'o': 0,
+                    'or': None
+                },
+                'refresh_on': [
+                    ['addCommit', None],
+                    ['editCommit', None],
+                    ['deleteCommit', None]
+                ],
+                'security_token': 'hi41o6BV2iLIk7dBuSKVXrM9y7sE',
+                'where_was_i': '/siteworx/firewall'
+            },
+            'r': 'Controller'
+        }
 
         self.v('Post values:',
                ', '.join(['{}:{}'.format(i, j) for i, j in payload.items()]))
 
-        posturl = urlparse.urljoin(server.url, 'index?action=login')
-
-        # u = p.urlsplit('http://cnet.com/asd//')
-        # os.path.normpath(os.path.join('asdf/qewr////', 'qwer/2435/?asd=qer'))
-        # x = p._replace(url='...')
-
-        # posturl = server.url + '/index?action=login'
-        print(posturl, server.url)
-        exit()
+        tail = '/index?action=login'
+        posturl = url_normalize(server.url + tail)
         self.v('Post url:', posturl)
 
         self.log.info('posturl: %s', posturl)
         with requests.Session() as s:
             # login page
             p = s.post(posturl, payload)
-            # click.echo_via_pager(p.text)
             if not self.right_page(p.text, which='home'):
                 ui.error('Could not log in.')
             # firewall page
-            # firewall = urlparse.urljoin(server.url, '/firewall')
-            firewall = server.url + '/firewall'
+            firewall = url_normalize(server.url + '/firewall')
+            # firewall = url_normalize(server.url + '/firewall#allow_hosts_settings-shell=%7B%22l%22%3A0%2C%22o%22%3A0%2C%22or%22%3Anull%2C%22d%22%3A%22asc%22%7D')
             self.log.info('firewall page: %s', firewall)
             self.v('firewall url:', firewall)
             fw = s.get(firewall)
+            # fw = s.post(firewall, firewall_payload)
+            token = self.get_token(fw)
+            click.echo_via_pager(fw.text)
             if not self.right_page(fw.text, which='firewall'):
                 ui.error('Could not navigate to firewall page.')
             self.delete_old(fw.text)
+            # https://sip1-245.nexcess.net:2443/siteworx/firewall#allow_hosts_settings-shell=%7B%22l%22%3A0%2C%22o%22%3A0%2C%22or%22%3Anull%2C%22d%22%3A%22asc%22%7D
+
+    def get_token(page):
+        pass
 
     def v(self, title, msg):
         if self.verbose:
@@ -191,7 +216,6 @@ def updateip(server, verbose):
               help="Show usernames and passwords as well.")
 def list_ips(all_info):
     """List the servers and their info"""
-    pass
 
 @main.command(context_settings=CONTEXT_SETTINGS)
 @click.argument('server', required=False)
@@ -199,17 +223,31 @@ def inspect(server):
     """Inspect a server to see if an update is needed"""
 
 
-# @click.command(context_settings=CONTEXT_SETTINGS)
-# @click_log.simple_verbosity_option(logger)
-# @click.argument('directory', required=True,
-#                 type=click.Path(exists=True, dir_okay=True,
-#                                 file_okay=False, resolve_path=True))
-# @click.option('-d', '--dry-run')
-# def main(directory, dry_run):
-#     logger.info(directory)
-#     logger.error(dry_run)
-#     pass
-
-
 if __name__ == '__main__':
     main()
+
+    payload = {
+        'i': {
+            'a': 'livePayloadCommit',
+            'c': 'index',
+            'iw_payload_output': 'html',
+            'iw_refresh_action': 'listIps',
+            'iw_refresh_ctrl': 'Ctrl_Siteworx_Firewall',
+            'iw_sess_hint': 'siteworx',
+            'pgn8state': {
+                'd': 'asc',
+                'l': 0,
+                'o': 0,
+                'or': None
+            },
+            'refresh_on': [
+                ['addCommit', None],
+                ['editCommit', None],
+                ['deleteCommit', None]
+            ],
+            'security_token': 'hi41o6BV2iLIk7dBuSKVXrM9y7sE',
+            'where_was_i': '/siteworx/firewall'
+        },
+        'r': 'Controller'
+    }
+

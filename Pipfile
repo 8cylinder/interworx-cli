@@ -10,6 +10,7 @@ ipython = "*"
 click = "*"
 requests = "*"
 bs4 = "*"
+url-normalize = "*"
 
 [requires]
 python_version = "2.7"
